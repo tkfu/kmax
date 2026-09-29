@@ -164,7 +164,7 @@ class Kbuild:
 
         return '\n'.join(ss)
     
-    def get_presence_conditions(self, vars, pcs, cond, zcond, visited=set()):
+    def get_presence_conditions(self, vars, pcs, cond, zcond, visited=None):
         names = set()
         for var in vars:
             if var in list(self.variables.keys()):
@@ -173,10 +173,15 @@ class Kbuild:
         # ignore undefined vars
         names = [ name for name in names if name in list(self.variables.keys()) ]
 
-        # prevent cycles, e.g., linux-3.19/net/mac80211/Makefile
+        # prevent cycles, e.g., linux-3.19/net/mac80211/Makefile.  visited
+        # holds only the variables on the current expansion path, as a new
+        # set per call, so a variable shared by two composites is expanded
+        # under the conditions of both, whichever comes first.
+        if visited is None:
+            visited = set()
         names = [ name for name in names if name not in visited ]
-        for name in names: visited.add(name)
-        
+        visited = visited | set(names)
+
         while len(names) > 0:
             name = names.pop()
             # print name
